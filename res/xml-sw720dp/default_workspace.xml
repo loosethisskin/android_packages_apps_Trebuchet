@@ -63,7 +63,7 @@
     <action
         launcher:container="-101"
         launcher:screen="0"
-        launcher:x="3"
+        launcher:x="4"
         launcher:y="0"
         launcher:action="AllApps" />
 </favorites>
