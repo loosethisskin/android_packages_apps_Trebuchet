@@ -74,7 +74,6 @@ public class CellLayout extends ViewGroup {
     private int mOriginalHeightGap;
     private int mWidthGap;
     private int mHeightGap;
-    private int mMaxGap;
     private boolean mScrollingTransformsDirty = false;
 
     private final Rect mRect = new Rect();
@@ -191,7 +190,6 @@ public class CellLayout extends ViewGroup {
         mCellHeight = mOriginalCellHeight = a.getDimensionPixelSize(R.styleable.CellLayout_cellHeight, 10);
         mWidthGap = mOriginalWidthGap = a.getDimensionPixelSize(R.styleable.CellLayout_widthGap, 0);
         mHeightGap = mOriginalHeightGap = a.getDimensionPixelSize(R.styleable.CellLayout_heightGap, 0);
-        mMaxGap = a.getDimensionPixelSize(R.styleable.CellLayout_maxGap, 0);
         mCountX = LauncherModel.getWorkspaceCellCountX();
         mCountY = LauncherModel.getWorkspaceCellCountY();
         mOccupied = new boolean[mCountX][mCountY];
@@ -282,11 +280,6 @@ public class CellLayout extends ViewGroup {
         mForegroundRect = new Rect();
 
         mShortcutsAndWidgets = new ShortcutAndWidgetContainer(context);
-
-        if (!LauncherApplication.isScreenLarge()){
-            mCellWidth = (mCellWidth * res.getInteger(R.integer.default_cell_count_x)) / mCountX;
-            mCellHeight = (mCellHeight * res.getInteger(R.integer.default_cell_count_y)) / mCountY;
-        }
 
         mShortcutsAndWidgets.setCellDimensions(mCellWidth, mCellHeight, mWidthGap, mHeightGap);
         addView(mShortcutsAndWidgets);
@@ -999,10 +992,19 @@ public class CellLayout extends ViewGroup {
         if (mOriginalWidthGap < 0 || mOriginalHeightGap < 0) {
             int hSpace = widthSpecSize - getPaddingLeft() - getPaddingRight();
             int vSpace = heightSpecSize - getPaddingTop() - getPaddingBottom();
+
             int hFreeSpace = hSpace - (mCountX * mCellWidth);
             int vFreeSpace = vSpace - (mCountY * mCellHeight);
-            mWidthGap = Math.min(mMaxGap, numWidthGaps > 0 ? (hFreeSpace / numWidthGaps) : 0);
-            mHeightGap = Math.min(mMaxGap,numHeightGaps > 0 ? (vFreeSpace / numHeightGaps) : 0);
+
+            mWidthGap = 0;
+            mHeightGap = 0;
+
+            if (numWidthGaps > 0) {
+                mWidthGap = hFreeSpace / numWidthGaps;
+            }
+            if (numHeightGaps > 0) {
+                mHeightGap = vFreeSpace / numHeightGaps;
+            }
             mShortcutsAndWidgets.setCellDimensions(mCellWidth, mCellHeight, mWidthGap, mHeightGap);
         } else {
             mWidthGap = mOriginalWidthGap;
@@ -1515,7 +1517,7 @@ public class CellLayout extends ViewGroup {
      *        matches exactly. Otherwise we find the best matching direction.
      * @param occoupied The array which represents which cells in the CellLayout are occupied
      * @param blockOccupied The array which represents which cells in the specified block (cellX,
-     *        cellY, spanX, spanY) are occupied. This is used when try to move a group of views. 
+     *        cellY, spanX, spanY) are occupied. This is used when try to move a group of views.
      * @param result Array in which to place the result, or null (in which case a new array will
      *        be allocated)
      * @return The X, Y cell of a vacant area that can contain this object,
@@ -1988,7 +1990,7 @@ public class CellLayout extends ViewGroup {
     private boolean attemptPushInDirection(ArrayList<View> intersectingViews, Rect occupied,
             int[] direction, View ignoreView, ItemConfiguration solution) {
         if ((Math.abs(direction[0]) + Math.abs(direction[1])) > 1) {
-            // If the direction vector has two non-zero components, we try pushing 
+            // If the direction vector has two non-zero components, we try pushing
             // separately in each of the components.
             int temp = direction[1];
             direction[1] = 0;
@@ -2029,7 +2031,7 @@ public class CellLayout extends ViewGroup {
             direction[0] = temp;
             direction[0] *= -1;
             direction[1] *= -1;
-            
+
         } else {
             // If the direction vector has a single non-zero component, we push first in the
             // direction of the vector
@@ -2047,8 +2049,8 @@ public class CellLayout extends ViewGroup {
             // Switch the direction back
             direction[0] *= -1;
             direction[1] *= -1;
-            
-            // If we have failed to find a push solution with the above, then we try 
+
+            // If we have failed to find a push solution with the above, then we try
             // to find a solution by pushing along the perpendicular axis.
 
             // Swap the components
@@ -2110,7 +2112,7 @@ public class CellLayout extends ViewGroup {
             }
         }
 
-        // First we try to find a solution which respects the push mechanic. That is, 
+        // First we try to find a solution which respects the push mechanic. That is,
         // we try to find a solution such that no displaced item travels through another item
         // without also displacing that item.
         if (attemptPushInDirection(mIntersectingViews, mOccupiedRect, direction, ignoreView,
